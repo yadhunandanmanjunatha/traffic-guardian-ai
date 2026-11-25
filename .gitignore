@@ -1,0 +1,28 @@
+# Secrets - NEVER commit the real .env (it holds your TomTom API key)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+# Logs
+logs/*.log
+
+# Uploads (keep the folder, ignore its contents)
+uploads/*
+!uploads/.gitkeep
+
+# OS/editor cruft
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test/tooling caches
+.pytest_cache/
+.mypy_cache/

@@ -1,0 +1,47 @@
+{
+  "mae_minutes": 7.641458403386634,
+  "r2": 0.7892181850023119,
+  "n_incidents_trained": 5184,
+  "top_10_features": [
+    [
+      "severity",
+      0.3413
+    ],
+    [
+      "blocked_lanes",
+      0.3221
+    ],
+    [
+      "emergency_vehicle_required",
+      0.2495
+    ],
+    [
+      "wind_speed",
+      0.0207
+    ],
+    [
+      "temperature",
+      0.0158
+    ],
+    [
+      "hour",
+      0.012
+    ],
+    [
+      "road_length",
+      0.0077
+    ],
+    [
+      "road_capacity",
+      0.0072
+    ],
+    [
+      "visibility",
+      0.0071
+    ],
+    [
+      "speed_limit",
+      0.0049
+    ]
+  ]
+}

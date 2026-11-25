@@ -1,0 +1,85 @@
+# Traffic Guardian AI — Master Feature Store v2.0
+# Single source of truth. Every entry answers: name, type, source,
+# engineered?, model(s) that use it, available-at-prediction-time,
+# missing-value strategy, encoding.
+
+temporal:
+  - {name: timestamp, type: datetime, source: traffic_sensor, engineered: false, model: both, prediction_safe: true, missing_strategy: drop_row, encoding: none}
+  - {name: hour, type: int, source: timestamp, engineered: true, model: both, prediction_safe: true, missing_strategy: recalculate, encoding: none}
+  - {name: minute, type: int, source: timestamp, engineered: true, model: both, prediction_safe: true, missing_strategy: recalculate, encoding: none}
+  - {name: day_of_week, type: int, source: timestamp, engineered: true, model: both, prediction_safe: true, missing_strategy: recalculate, encoding: none}
+  - {name: month, type: int, source: timestamp, engineered: true, model: both, prediction_safe: true, missing_strategy: recalculate, encoding: none}
+  - {name: is_weekend, type: bool, source: timestamp, engineered: true, model: both, prediction_safe: true, missing_strategy: recalculate, encoding: binary}
+  - {name: is_holiday, type: bool, source: holiday_calendar, engineered: true, model: both, prediction_safe: true, missing_strategy: default_false, encoding: binary}
+  - {name: peak_hour, type: bool, source: timestamp, engineered: true, model: both, prediction_safe: true, missing_strategy: recalculate, encoding: binary, formula: "hour in [7,10] or [17,20]"}
+
+traffic:
+  - {name: vehicle_count, type: int, source: traffic_sensor_or_yolo, engineered: false, model: both, prediction_safe: true, missing_strategy: median}
+  - {name: average_speed, type: float, source: traffic_sensor, engineered: false, model: both, prediction_safe: true, missing_strategy: mean}
+  - {name: travel_time, type: float, source: traffic_sensor, engineered: false, model: both, prediction_safe: true, missing_strategy: mean}
+  - {name: occupancy_rate, type: float, source: traffic_sensor, engineered: false, model: both, prediction_safe: true, missing_strategy: median}
+  - {name: traffic_volume, type: float, source: traffic_sensor, engineered: false, model: congestion, prediction_safe: true, missing_strategy: mean}
+  - {name: sensor_id, type: category, source: traffic_sensor, engineered: false, model: congestion, prediction_safe: true, missing_strategy: unknown}
+  - {name: road_segment_id, type: category, source: road_network, engineered: false, model: both, prediction_safe: true, missing_strategy: unknown}
+
+weather:
+  - {name: temperature, type: float, source: weather_api, model: both}
+  - {name: humidity, type: float, source: weather_api, model: both}
+  - {name: rainfall, type: float, source: weather_api, model: both}
+  - {name: visibility, type: float, source: weather_api, model: both}
+  - {name: wind_speed, type: float, source: weather_api, model: both}
+  - {name: weather_condition, type: category, source: weather_api, model: both, encoding: label}
+  - {name: precipitation_probability, type: float, source: weather_api, model: both}
+
+road:
+  - {name: road_type, type: category, source: openstreetmap, encoding: label}
+  - {name: number_of_lanes, type: int, source: openstreetmap}
+  - {name: speed_limit, type: int, source: openstreetmap}
+  - {name: road_capacity, type: int, source: openstreetmap_or_estimated}
+  - {name: junction, type: bool, source: openstreetmap, encoding: binary}
+  - {name: intersection_type, type: category, source: openstreetmap, encoding: label}
+  - {name: road_length, type: float, source: openstreetmap}
+
+incident:
+  # NOTE: incident_duration is intentionally EXCLUDED - it is only known
+  # after the incident ends, so including it in clearance-time prediction
+  # would be data leakage (the model would see its own answer).
+  - {name: incident_exists, type: bool, prediction_safe: true}
+  - {name: incident_type, type: category, prediction_safe: true, encoding: label}
+  - {name: severity, type: int, range: "1-5", prediction_safe: true}
+  - {name: blocked_lanes, type: int, prediction_safe: true}
+  - {name: emergency_vehicle_required, type: bool, prediction_safe: true, encoding: binary}
+
+edge_ai:
+  - {name: car_count, type: int, source: raspberry_pi_yolo}
+  - {name: bike_count, type: int, source: raspberry_pi_yolo}
+  - {name: bus_count, type: int, source: raspberry_pi_yolo}
+  - {name: truck_count, type: int, source: raspberry_pi_yolo}
+  - {name: heavy_vehicle_ratio, type: float, engineered: true, formula: "(bus_count + truck_count) / total_vehicles"}
+
+engineered:
+  - {name: traffic_density, formula: "vehicle_count / road_capacity"}
+  - {name: speed_ratio, formula: "average_speed / speed_limit"}
+  - {name: congestion_index, formula: "traffic_density * (1 - speed_ratio)"}
+  - {name: weather_severity_score, formula: "rain_norm*0.4 + visibility_risk*0.4 + wind_norm*0.2, scaled 0-100"}
+  - {name: road_complexity_score, formula: "weighted(road_type, lanes, junction, intersection_type), scaled 0-100"}
+  - {name: traffic_growth_rate, formula: "(current_count - previous_count) / previous_count, per sensor"}
+  - {name: rolling_avg_speed, formula: "30-min rolling mean of average_speed, per sensor"}
+  - {name: rolling_avg_volume, formula: "30-min rolling mean of vehicle_count, per sensor"}
+  - {name: rolling_speed_variance, formula: "30-min rolling std of average_speed, per sensor"}
+  - {name: queue_density_score, formula: "traffic_density*0.5 + occupancy_rate*0.5, scaled 0-100"}
+  - name: traffic_health_score
+    is_novelty: true
+    formula: "100 - congestion_penalty - weather_penalty - incident_penalty"
+    bands: "90-100 Healthy | 70-89 Moderate | 50-69 Busy | 0-49 Critical"
+
+targets:
+  - {name: congestion_class, type: int, values: "0=Low 1=Moderate 2=High 3=Severe", model: congestion_classifier}
+  - {name: clearance_time_minutes, type: float, unit: minutes, model: clearance_regressor}
+
+design_principles:
+  - "Available at prediction time"
+  - "Improves model performance"
+  - "Easy to calculate"
+  - "Easy to explain"
+  - "Useful in the real world"

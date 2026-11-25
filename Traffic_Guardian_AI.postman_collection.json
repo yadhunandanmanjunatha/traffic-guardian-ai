@@ -1,0 +1,91 @@
+{
+  "info": {
+    "name": "Traffic Guardian AI",
+    "_postman_id": "b7e1a1e0-6b1a-4a2b-9a1a-tgaicollection",
+    "description": "Live prediction + route-planning API for Traffic Guardian AI. Import this, set the base_url variable, and run 'Health Check' first to confirm the models loaded.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": { "method": "GET", "url": "{{base_url}}/api/health" }
+    },
+    {
+      "name": "Predict - Clear day (defaults)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/predict",
+        "body": { "mode": "raw", "raw": "{}" }
+      }
+    },
+    {
+      "name": "Predict - Rainy rush hour",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/predict",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"car_count\": 45,\n  \"bike_count\": 15,\n  \"bus_count\": 3,\n  \"truck_count\": 2,\n  \"average_speed\": 14,\n  \"road_type\": \"arterial\",\n  \"number_of_lanes\": 3,\n  \"speed_limit\": 50,\n  \"road_length_km\": 1.5,\n  \"rainfall_mm\": 12,\n  \"visibility_km\": 4,\n  \"wind_speed\": 18,\n  \"hour\": 9,\n  \"is_weekend\": false\n}"
+        }
+      }
+    },
+    {
+      "name": "Predict - Incident + rain (with clearance time)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/predict",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"car_count\": 60,\n  \"bike_count\": 10,\n  \"bus_count\": 2,\n  \"truck_count\": 4,\n  \"average_speed\": 6,\n  \"road_type\": \"highway\",\n  \"number_of_lanes\": 4,\n  \"speed_limit\": 80,\n  \"road_length_km\": 2.0,\n  \"rainfall_mm\": 8,\n  \"visibility_km\": 5,\n  \"incident_exists\": true,\n  \"severity\": 3,\n  \"blocked_lanes\": 1,\n  \"emergency_vehicle_required\": true,\n  \"hour\": 18\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Landmarks",
+      "request": { "method": "GET", "url": "{{base_url}}/api/landmarks" }
+    },
+    {
+      "name": "Predict Route",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/route",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"whitefield\",\n  \"destination\": \"electronic_city\",\n  \"hour\": 9,\n  \"rainfall_mm\": 0,\n  \"visibility_km\": 10\n}"
+        }
+      }
+    },
+    {
+      "name": "Best Time To Leave",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/best-time",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"source\": \"whitefield\",\n  \"destination\": \"electronic_city\",\n  \"hours_ahead\": 6,\n  \"rainfall_mm\": 0,\n  \"visibility_km\": 10\n}"
+        }
+      }
+    },
+    {
+      "name": "Predict - Invalid input (422 demo)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/predict",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"car_count\": \"a lot\",\n  \"road_type\": \"dirt_track\"\n}"
+        },
+        "description": "Sends a non-numeric string and an out-of-enum road_type on purpose, to show the 422 validation error shape."
+      }
+    }
+  ]
+}
